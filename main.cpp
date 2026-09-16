@@ -1,18 +1,47 @@
 #include <curses.h>
 #include <ctype.h>
-
 #include <string>
 #include <vector>
 
-static void draw(const std::vector<std::string> &lines, int row, int col)
+static std::vector<std::string> lines(1);
+static int prev_row = 0;           //上次输入后的总行数
+
+//重画第 row 行 [from - end] 的部分
+static void draw_row(int row, int from, bool clear_tail)
 {
-    erase();
+    if (row >= LINES || from >= COLS)
+        return;
 
-    for (int i = 0; i < (int)lines.size(); ++i)
-        mvprintw(i, 0, "%s", lines[i].c_str());
+    wmove(stdscr, row, from);
 
-    move(row, col);
-    refresh();
+    if (clear_tail)
+        wclrtoeol(stdscr);
+
+    waddnstr(stdscr, lines[row].c_str() + from, COLS - from);
+}
+
+//重画第 row 行至文档结尾的部分
+static void draw_from(int row)
+{
+    int last_row = (int)lines.size();
+
+    if (last_row > LINES)
+        last_row = LINES;
+
+    for (int i = row; i < last_row; i++)
+    {
+        wmove(stdscr, i, 0);
+        wclrtoeol(stdscr);
+        waddnstr(stdscr, lines[i].c_str(), COLS);
+    }
+
+    if (prev_row > last_row)           //行数减少,需清除尾部
+    {
+        wmove(stdscr, last_row, 0);
+        wclrtoeol(stdscr);
+    }
+
+    prev_row = last_row;
 }
 
 int main()
@@ -21,17 +50,18 @@ int main()
     keypad(stdscr, TRUE);
     noecho();
 
-    std::vector<std::string> lines(1);
     int row = 0;
     int col = 0;
 
-    draw(lines, row, col);
+    draw_from(0);
 
     int ch;
 
     while ((ch = getch()) != 27)
     {
-        bool edited = false;
+        int dirty_row = -1;         //需处理的 行/列
+        int dirty_col = -1;
+        bool clear_tail = false;        //是否要清除尾部
 
         switch (ch)
         {
@@ -75,12 +105,15 @@ int main()
             }
             break;
 
-        case 0x08:
+        case 0x08:      //退格
             if (col > 0)
             {
+                dirty_row = row;
+                dirty_col = col - 1;
+                clear_tail = true;
+
                 lines[row].erase(col - 1, 1);
                 --col;
-                edited = true;
             }
             else if (row > 0)
             {
@@ -88,36 +121,42 @@ int main()
                 lines[row - 1] += lines[row];
                 lines.erase(lines.begin() + row);
                 --row;
-                edited = true;
+
+                dirty_row = row;
             }
             break;
 
-        case '\r':
-        case '\n':
+        case '\n':      //换行
             lines.insert(lines.begin() + row + 1, lines[row].substr(col));
             lines[row].erase(col);
-            ++row;
+            row++;
             col = 0;
-            edited = true;
+
+            dirty_row = row - 1;
             break;
 
         default:
             if (isprint(ch))
             {
+                dirty_row = row;
+                dirty_col = col;
+
                 lines[row].insert(col, 1, (char)ch);
-                ++col;
-                edited = true;
+                col++;
             }
             break;
         }
 
-        if (edited)
-            draw(lines, row, col);
-        else
+        if (dirty_row >= 0)
         {
-            move(row, col);
-            refresh();
+            if (dirty_col >= 0)
+                draw_row(dirty_row, dirty_col, clear_tail);
+            else
+                draw_from(dirty_row);
         }
+
+        wmove(stdscr, row, col < COLS ? col : COLS - 1);
+        refresh();
     }
 
     endwin();
