@@ -57,7 +57,7 @@ int main()
 
     int ch;
 
-    while ((ch = getch()) != 27)
+    while ((ch = getch()) != 0x11)      //Ctrl-Q
     {
         int dirty_row = -1;         //需处理的 行/列
         int dirty_col = -1;
@@ -127,16 +127,19 @@ int main()
             break;
 
         case '\n':      //换行
-            lines.insert(lines.begin() + row + 1, lines[row].substr(col));
-            lines[row].erase(col);
-            row++;
-            col = 0;
+            if ((int)lines.size() < LINES)      //屏幕已满则拦截
+            {
+                lines.insert(lines.begin() + row + 1, lines[row].substr(col));
+                lines[row].erase(col);
+                row++;
+                col = 0;
 
-            dirty_row = row - 1;
+                dirty_row = row - 1;
+            }
             break;
 
         default:
-            if (isprint(ch))
+            if (isprint(ch) && (int)lines[row].size() < COLS - 1)   //本行已满则拦截
             {
                 dirty_row = row;
                 dirty_col = col;
