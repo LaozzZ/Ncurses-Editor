@@ -8,7 +8,8 @@
 #include <vector>
 
 static std::vector<std::string> lines(1);
-static int prev_row = 0;           //上次输入后的总行数
+static int top_row = 0;            //屏幕第 0 行对应文本的第几行
+static int left_col = 0;           //屏幕第 0 列对应文本的第几列
 
 //读入文件
 static bool load_file(const char *path)
@@ -43,42 +44,81 @@ static bool load_file(const char *path)
     return true;
 }
 
-//重画第 row 行 [from - end] 的部分
+//视口不能停在文档末尾之外
+static void clamp_view()
+{
+    int max_top = (int)lines.size() - LINES;
+
+    if(max_top < 0)
+        max_top = 0;
+
+    if(top_row > max_top)
+        top_row = max_top;
+
+    if(top_row < 0)
+        top_row = 0;
+}
+
+//保证光标在屏幕内，必要时滚动视口
+static bool ensure_visible(int row, int col)
+{
+    int prev_top_row = top_row;
+    int prev_left_col = left_col;
+
+    if(row < top_row)
+        top_row = row;
+    else if(row >= top_row + LINES)
+        top_row = row - LINES + 1;
+
+    if(col < left_col)
+        left_col = col;
+    else if(col >= left_col + COLS)
+        left_col = col - COLS + 1;
+
+    if(top_row < 0)
+        top_row = 0;
+
+    if(left_col < 0)
+        left_col = 0;
+
+    return prev_top_row != top_row || prev_left_col != left_col;        //检测视口是否改变
+}
+
+//重画文本第 row 行从 from 列到行尾的部分
 static void draw_row(int row, int from, bool clear_tail)
 {
-    if(row >= LINES || from >= COLS)
+    int y = row - top_row;
+    int x = from - left_col;
+
+    if(y < 0 || y >= LINES || x < 0 || x >= COLS)
         return;
 
-    wmove(stdscr, row, from);
+    wmove(stdscr, y, x);
 
     if(clear_tail)
         wclrtoeol(stdscr);
 
-    waddnstr(stdscr, lines[row].c_str() + from, COLS - from);
+    waddnstr(stdscr, lines[row].c_str() + from, COLS - x - 1);
 }
 
-//重画第 row 行至文档结尾的部分
+//重画文本第 row 行到屏幕底部的部分
 static void draw_from(int row)
 {
-    int last_row = (int)lines.size();
+    int y = row - top_row;
 
-    if(last_row > LINES)
-        last_row = LINES;
+    if(y < 0)
+        y = 0;
 
-    for(int i = row; i < last_row; i++)
+    for(int i = y; i < LINES; i++)
     {
+        int text_row = top_row + i;
+
         wmove(stdscr, i, 0);
         wclrtoeol(stdscr);
-        waddnstr(stdscr, lines[i].c_str(), COLS);
-    }
 
-    if(prev_row > last_row)           //行数减少,需清除尾部
-    {
-        wmove(stdscr, last_row, 0);
-        wclrtoeol(stdscr);
+        if(text_row < (int)lines.size() && left_col < (int)lines[text_row].size())
+            waddnstr(stdscr, lines[text_row].c_str() + left_col, COLS - 1);
     }
-
-    prev_row = last_row;
 }
 
 int main(int argc, char *argv[])
@@ -93,9 +133,11 @@ int main(int argc, char *argv[])
     int row = 0;
     int col = 0;
 
+    // clamp_view();
+    // ensure_visible(row, col);
     draw_from(0);
 
-    wmove(stdscr, row, col);        //画完之后把光标摆回文档开头
+    // wmove(stdscr, row - top_row, col - left_col);
     refresh();
 
     int ch;
@@ -105,6 +147,7 @@ int main(int argc, char *argv[])
         int dirty_row = -1;         //需处理的 行/列
         int dirty_col = -1;
         bool clear_tail = false;        //是否要清除尾部
+        bool redraw = false;            //是否整屏重画
 
         switch(ch)
         {
@@ -119,7 +162,7 @@ int main(int argc, char *argv[])
             break;
 
         case KEY_DOWN:
-            if(row + 1 < (int)lines.size() && row + 1 < LINES)
+            if(row + 1 < (int)lines.size())
             {
                 ++row;
 
@@ -140,11 +183,8 @@ int main(int argc, char *argv[])
 
         case KEY_RIGHT:
             if(col < (int)lines[row].size())
-            {
-                if(col + 1 < COLS)     //不越出屏幕右边界
-                    ++col;
-            }
-            else if(row + 1 < (int)lines.size() && row + 1 < LINES)
+                ++col;
+            else if(row + 1 < (int)lines.size())
             {
                 ++row;
                 col = 0;
@@ -173,19 +213,22 @@ int main(int argc, char *argv[])
             break;
 
         case '\n':      //换行
-            if((int)lines.size() < LINES)      //屏幕已满则拦截
-            {
-                lines.insert(lines.begin() + row + 1, lines[row].substr(col));
-                lines[row].erase(col);
-                row++;
-                col = 0;
+            lines.insert(lines.begin() + row + 1, lines[row].substr(col));
+            lines[row].erase(col);
+            row++;
+            col = 0;
 
-                dirty_row = row - 1;
-            }
+            dirty_row = row - 1;
+            break;
+
+        case KEY_RESIZE:        //窗口大小改变，需重画
+            resize_term(0, 0);
+            clear();
+            redraw = true;
             break;
 
         default:
-            if(isprint(ch) && (int)lines[row].size() < COLS - 1)   //本行已满则拦截
+            if(isprint(ch))
             {
                 dirty_row = row;
                 dirty_col = col;
@@ -196,15 +239,16 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (dirty_row >= 0)
-        {
-            if(dirty_col >= 0)
-                draw_row(dirty_row, dirty_col, clear_tail);
-            else
-                draw_from(dirty_row);
-        }
+        clamp_view();
 
-        wmove(stdscr, row, col < COLS ? col : COLS - 1);
+        if(ensure_visible(row, col) || redraw)      //这里会执行ensure_visible(row, col)判断
+            draw_from(top_row);         //视口滚动了，重画
+        else if(dirty_row >= 0 && dirty_col >= 0)
+            draw_row(dirty_row, dirty_col, clear_tail);
+        else if(dirty_row >= 0)
+            draw_from(dirty_row);
+
+        wmove(stdscr, row - top_row, col - left_col);
         refresh();
     }
 
