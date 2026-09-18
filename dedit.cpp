@@ -44,22 +44,7 @@ static bool load_file(const char *path)
     return true;
 }
 
-//视口不能停在文档末尾之外
-static void clamp_view()
-{
-    int max_top = (int)lines.size() - LINES;
-
-    if(max_top < 0)
-        max_top = 0;
-
-    if(top_row > max_top)
-        top_row = max_top;
-
-    if(top_row < 0)
-        top_row = 0;
-}
-
-//保证光标在屏幕内，必要时滚动视口
+//保证光标在屏幕内
 static bool ensure_visible(int row, int col)
 {
     int prev_top_row = top_row;
@@ -133,11 +118,9 @@ int main(int argc, char *argv[])
     int row = 0;
     int col = 0;
 
-    // clamp_view();
-    // ensure_visible(row, col);
     draw_from(0);
 
-    // wmove(stdscr, row - top_row, col - left_col);
+    wmove(stdscr, 0, 0);
     refresh();
 
     int ch;
@@ -221,9 +204,17 @@ int main(int argc, char *argv[])
             dirty_row = row - 1;
             break;
 
-        case KEY_RESIZE:        //窗口大小改变，需重画
+        case KEY_RESIZE:        //窗口大小改变
             resize_term(0, 0);
             clear();
+
+            //视口行数改变，处理极端情况视口位置
+            if(top_row > (int)lines.size() - LINES)
+                top_row = (int)lines.size() - LINES;
+
+            if(top_row < 0)
+                top_row = 0;
+
             redraw = true;
             break;
 
@@ -238,8 +229,6 @@ int main(int argc, char *argv[])
             }
             break;
         }
-
-        clamp_view();
 
         if(ensure_visible(row, col) || redraw)      //这里会执行ensure_visible(row, col)判断
             draw_from(top_row);         //视口滚动了，重画
