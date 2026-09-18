@@ -10,6 +10,19 @@
 static std::vector<std::string> lines(1);
 static int top_row = 0;            //屏幕第 0 行对应文本的第几行
 static int left_col = 0;           //屏幕第 0 列对应文本的第几列
+static std::string file_name = "default.txt";       //状态栏文件名
+
+//从路径里取文件名，\ 和 / 都认
+static std::string get_name(const char *path)
+{
+    std::string full(path);
+    int cut = full.find_last_of("\\/");
+
+    if(cut != std::string::npos)
+        full.erase(0, cut + 1);
+
+    return full;
+}
 
 //读入文件
 static bool load_file(const char *path)
@@ -52,8 +65,8 @@ static bool ensure_visible(int row, int col)
 
     if(row < top_row)
         top_row = row;
-    else if(row >= top_row + LINES)
-        top_row = row - LINES + 1;
+    else if(row >= top_row + LINES - 1)
+        top_row = row - (LINES - 1) + 1;
 
     if(col < left_col)
         left_col = col;
@@ -75,7 +88,7 @@ static void draw_row(int row, int from, bool clear_tail)
     int y = row - top_row;
     int x = from - left_col;
 
-    if(y < 0 || y >= LINES || x < 0 || x >= COLS)
+    if(y < 0 || y >= LINES - 1 || x < 0 || x >= COLS)
         return;
 
     wmove(stdscr, y, x);
@@ -94,7 +107,7 @@ static void draw_from(int row)
     if(y < 0)
         y = 0;
 
-    for(int i = y; i < LINES; i++)
+    for(int i = y; i < LINES - 1; i++)
     {
         int text_row = top_row + i;
 
@@ -106,19 +119,48 @@ static void draw_from(int row)
     }
 }
 
+static void draw_status(int row, int col)
+{
+    int width = COLS - 1;
+    int name_len = (int)file_name.size();
+
+    if(name_len > width)
+        name_len = width;
+
+    std::string text = file_name + " | " + std::to_string(row + 1) + " : " + std::to_string(col + 1);
+
+    text.resize(width, ' ');        //超出则截断，不足则补足
+
+    wmove(stdscr, LINES - 1, 0);
+
+    wattrset(stdscr, COLOR_PAIR(1));
+    waddnstr(stdscr, file_name.c_str(), name_len);
+    wattrset(stdscr, A_NORMAL);
+    waddnstr(stdscr, text.c_str() + name_len, width - name_len);
+}
+
 int main(int argc, char *argv[])
 {
-    if(argc != 1 && !load_file(argv[1]))
-        return 1;
+    if(argc != 1)
+    {
+        file_name = get_name(argv[1]);
+
+        if(!load_file(argv[1]))
+            return 1;
+    }
 
     initscr();
     keypad(stdscr, TRUE);
     noecho();
 
+    start_color();
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+
     int row = 0;
     int col = 0;
 
     draw_from(0);
+    draw_status(row, col);
 
     wmove(stdscr, 0, 0);
     refresh();
@@ -211,8 +253,8 @@ int main(int argc, char *argv[])
             clear();
 
             //视口行数改变，处理极端情况视口位置
-            if(top_row > (int)lines.size() - LINES)
-                top_row = (int)lines.size() - LINES;
+            if(top_row > (int)lines.size() - (LINES - 1))
+                top_row = (int)lines.size() - (LINES - 1);
 
             if(top_row < 0)
                 top_row = 0;
@@ -239,6 +281,7 @@ int main(int argc, char *argv[])
         else if(dirty_row >= 0)
             draw_from(dirty_row);
 
+        draw_status(row, col);
         wmove(stdscr, row - top_row, col - left_col);
         refresh();
     }
