@@ -205,7 +205,9 @@ int main(int argc, char *argv[])
             break;
 
         case KEY_RESIZE:        //窗口大小改变
-            resize_term(0, 0);
+            if(resize_term(0, 0) == ERR)        //窗口小于(2, 2)时重建
+                resize_term(2, COLS);
+
             clear();
 
             //视口行数改变，处理极端情况视口位置
