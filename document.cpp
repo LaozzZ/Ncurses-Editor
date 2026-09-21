@@ -77,7 +77,7 @@ void Document::split_line()
     ++row;
     col = 0;
 
-    edit = Edited{row - 1, -1, false};        //行数变了，从上一行重画到正文区底部
+    edit = Edited{row - 1, -1, false};
 }
 
 void Document::erase_before()
@@ -98,6 +98,23 @@ void Document::erase_before()
         lines.erase(lines.begin() + row);
         --row;
 
+        edit = Edited{row, -1, false};
+    }
+    else
+        edit = Edited{};
+}
+
+void Document::erase_front()
+{
+    if(col < (int)lines[row].size())
+    {
+        lines[row].erase(col, 1);
+        edit = Edited{row, col, true};
+    }
+    else if(row < (int)lines.size() - 1)
+    {
+        lines[row] += lines[row + 1];
+        lines.erase(lines.begin() + row + 1);
         edit = Edited{row, -1, false};
     }
     else

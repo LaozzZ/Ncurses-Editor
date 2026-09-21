@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         case Action::Resize:
             terminal_resize();
             lay = screen_layout();
-            view.clamp(doc, lay);           //行数变了，视口可能落到文档末尾之外
+            view.clamp(doc, lay);
             view_moved = true;              //视口移动，整屏重画
             break;
 
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
         case Action::Left:      doc.move_left();     break;
         case Action::Right:     doc.move_right();    break;
         case Action::Backspace: doc.erase_before();  break;
+        case Action::Del:       doc.erase_front();   break;
         case Action::Enter:     doc.split_line();    break;
         case Action::Char:      doc.insert_char(ch); break;
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[])
             draw_text_edited(doc, view, lay);
 
         draw_status(name, doc.row, doc.col, lay);
-        screen_move_cursor(doc, view);
+        screen_move_cursor(doc, view);      //光标移位
         screen_refresh();
     }
 }

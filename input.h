@@ -10,6 +10,7 @@ enum class Action
     Left,
     Right,
     Backspace,
+    Del,
     Enter,
     Char
 };

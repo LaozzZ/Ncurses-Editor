@@ -18,6 +18,7 @@ Action read_action(char &ch)
     case KEY_LEFT:      return Action::Left;
     case KEY_RIGHT:     return Action::Right;
     case 0x08:          return Action::Backspace;
+    case 0x14A:         return Action::Del;
     case '\n':          return Action::Enter;
     }
 

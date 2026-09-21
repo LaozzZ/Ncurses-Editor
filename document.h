@@ -39,4 +39,5 @@ struct Document
     void insert_char(char ch);
     void split_line();          //Enter
     void erase_before();        //退格
+    void erase_front();         //Delete
 };
