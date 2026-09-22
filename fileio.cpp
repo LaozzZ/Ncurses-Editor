@@ -1,9 +1,12 @@
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include "fileio.h"
+
+namespace fs = std::filesystem;
 
 bool load_file(const char *path, std::vector<std::string> &lines)
 {
@@ -12,9 +15,9 @@ bool load_file(const char *path, std::vector<std::string> &lines)
     if(!in)
     {
         if(errno == ENOENT)
-            fprintf(stderr, "错误：文件不存在：%s\n", path);
+            std::cerr << "错误：文件不存在：" << path << "\n";
         else
-            fprintf(stderr, "错误：无法读取文件：%s(%s)\n", path, strerror(errno));
+            std::cerr << "错误：无法读取文件：" << path << "(" << std::strerror(errno) << ")\n";
 
         return false;
     }
@@ -33,6 +36,55 @@ bool load_file(const char *path, std::vector<std::string> &lines)
 
     if(lines.empty())                   //空文件处理
         lines.push_back("");
+
+    return !in.bad();
+}
+
+bool save_file(const char *path, const std::vector<std::string> &lines, std::string& error)
+{
+    std::string full(path);
+    std::string temp_path;
+    size_t cut = full.find_last_of("\\/");
+
+    if(cut != std::string::npos)
+        temp_path += full.substr(0, cut + 1);
+    temp_path += ".dedit_tmp";
+    std::error_code ec;
+    
+    std::ofstream out(temp_path, std::ios::binary);
+
+    if(!out)
+    {
+        error = "Cannot create temp file: " + temp_path + "(" + std::strerror(errno) + ")";
+
+        return false;
+    }
+
+    for(const std::string& line:lines)
+    {
+        out.write(line.data(), (std::streamsize)line.size());
+        out.put('\n');
+    }
+
+    out.close();
+
+    if(out.fail())
+    {
+        error = "Cannot write temp file: " + temp_path + "(" + std::strerror(errno) + ")";
+        fs::remove(temp_path, ec);
+
+        return false;
+    }
+
+    fs::rename(temp_path, path, ec);
+
+    if(ec)
+    {
+        error = "Cannot replace file: " + full + "(" + ec.message() + ")";
+        fs::remove(temp_path, ec);
+
+        return false;
+    }
 
     return true;
 }

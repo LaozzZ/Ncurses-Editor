@@ -39,6 +39,20 @@ static void draw_from(const Document &doc, const View &view, Layout lay, int row
     }
 }
 
+//刷新状态栏参数
+void StatusLine::status_refresh(const Document &doc)
+{
+    row = doc.row + 1;
+    col = doc.col + 1;
+    modified = doc.edit.dirty_row >= 0 || modified;
+    if(message == "Saved")
+        msg_color = 1;
+    else if(message == "Unsaved changes, press Ctrl-Q again to quit")
+        msg_color = 2;
+    else
+        msg_color = 3;
+}
+
 //返回书写区尺寸
 Layout screen_layout()
 {
@@ -54,6 +68,8 @@ void screen_init()
 
     start_color();
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(3, COLOR_RED, COLOR_BLACK);
 }
 
 //关闭curses
@@ -93,24 +109,52 @@ void draw_text_edited(const Document &doc, const View &view, Layout lay)
 }
 
 //画状态栏
-void draw_status(const std::string &name, int row, int col, Layout lay)
+void draw_status(const StatusLine &state, Layout lay)
 {
-    int width = lay.cols;
-    int name_len = name.size();
+    std::string name = state.name;
 
-    if(name_len > width)
-        name_len = width;
+    if(state.modified)
+        name.insert(name.begin(), '*');
 
-    std::string text = name + " | " + std::to_string(row + 1) + " : " + std::to_string(col + 1);
+    std::string texts[3] = {name,
+                            std::to_string(state.row) + " : " + std::to_string(state.col),
+                            state.message};
+    int pairs[3] = {state.modified ? 2 : 1, 0, state.msg_color};
 
-    text.resize(width, ' ');        //超出则截断，不足则补足
-
+    int x = 0;
     wmove(stdscr, lay.rows, 0);
 
-    wattrset(stdscr, COLOR_PAIR(1));
-    waddnstr(stdscr, name.c_str(), name_len);
+    for(int i = 0; i < 3; i++)
+    {
+        if(texts[i].empty())
+            continue;
+
+        int sep = x > 0 ? 3 : 0;
+
+        if(x + sep >= lay.cols)
+            break;
+
+        if(sep)
+        {
+            wattrset(stdscr, A_NORMAL);
+            waddnstr(stdscr, " | ", sep);
+            x += sep;
+        }
+
+        int n = (int)texts[i].size();
+
+        if(n > lay.cols - x)
+            n = lay.cols - x;               //超出部分截断
+
+        wattrset(stdscr, COLOR_PAIR(pairs[i]));
+        waddnstr(stdscr, texts[i].c_str(), n);
+        x += n;
+    }
+
     wattrset(stdscr, A_NORMAL);
-    waddnstr(stdscr, text.c_str() + name_len, width - name_len);
+
+    if(x < lay.cols)                        //剩下的用空格填到行尾
+        waddnstr(stdscr, std::string(lay.cols - x, ' ').c_str(), lay.cols - x);
 }
 
 //终端尺寸改变时的处理
