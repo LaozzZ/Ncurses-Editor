@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
             state.message = "Search: " + query + position;
             
                         
-            if(action == Action::Quit)
+            if(action == Action::Esc)
             {
                 search_mode = false;
                 state.message.clear();
@@ -127,9 +127,8 @@ int main(int argc, char *argv[])
             case Action::Enter:     doc.split_line();    break;
             case Action::Char:      doc.insert_char(ch); break;
 
-            case Action::None:
-                doc.edit = Edited{};
-                break;
+            case Action::None:      break;
+            case Action::Esc:       break;
         }
 
         if(view.ensure_visible(doc, lay))

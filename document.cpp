@@ -135,7 +135,6 @@ void Document::search(const std::string &target, std::string &position, std::vec
         for(int i = 0;i < (int)lines.size();i++)
         {
             if(target.empty())
-            {}
                 break;
 
             size_t col = 0;

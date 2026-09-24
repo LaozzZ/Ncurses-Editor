@@ -6,6 +6,7 @@ enum class Action
     Search,
     Save,           //Ctrl-S
     Quit,           //Ctrl-Q
+    Esc,
     Resize,         //窗口尺寸改变
     Up,
     Down,
