@@ -31,6 +31,8 @@ struct Document
 
     void load(std::vector<std::string> loaded);
 
+    void move_to(int row, int col);
+
     void move_up();
     void move_down();
     void move_left();
@@ -40,4 +42,6 @@ struct Document
     void split_line();          //Enter
     void erase_before();        //退格
     void erase_front();         //Delete
+
+    void search(const std::string &target, std::string &position, std::vector<std::vector<int>> &search_results);
 };

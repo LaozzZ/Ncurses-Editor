@@ -14,7 +14,7 @@ struct StatusLine
     int row = 1;
     int col = 1;
 
-    void status_refresh(const Document &doc);
+    void status_refresh(const Document &doc, bool search_mode);
 };
 
 Layout screen_layout();

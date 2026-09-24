@@ -11,6 +11,7 @@ Action read_action(char &ch)
 
     switch(key)
     {
+        case 0x06:          return Action::Search;
         case 0x13:          return Action::Save;
         case 0x11:          return Action::Quit;        //Ctrl-Q
         case KEY_RESIZE:    return Action::Resize;

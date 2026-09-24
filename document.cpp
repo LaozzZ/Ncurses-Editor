@@ -8,6 +8,12 @@ void Document::load(std::vector<std::string> loaded)
     edit = Edited{};
 }
 
+void Document::move_to(int row, int col)
+{
+    this->row = row;
+    this->col = col;
+}
+
 void Document::move_up()
 {
     if(row > 0)
@@ -119,4 +125,42 @@ void Document::erase_front()
     }
     else
         edit = Edited{};
+}
+
+
+void Document::search(const std::string &target, std::string &position, std::vector<std::vector<int>> &search_results)
+{
+    if(search_results.empty())          //第一次按下Enter时进行的查找操作
+    {
+        for(int i = 0;i < (int)lines.size();i++)
+        {
+            if(target.empty())
+            {}
+                break;
+
+            size_t col = 0;
+            while((col = lines[i].find(target, col)) != std::string::npos)
+            {
+                search_results.push_back({i, (int)col});
+                col += target.size();
+            }
+        }
+
+        if(search_results.empty())
+            search_results.push_back({-1, -1});
+        else
+            search_results.insert(search_results.begin(), {1, (int)search_results.size()});
+    }
+
+    if(search_results[0][0] != -1)      //后续按下Enter时的 "下一个" 操作
+    {
+        int &pos = search_results[0][0];
+        int &length = search_results[0][1];
+        position = " " + std::to_string(pos) + " / " + std::to_string(length);
+        row = search_results[pos][0];
+        col = search_results[pos][1];
+        pos = pos % length + 1;
+    }
+    else
+        position = " Failed";
 }

@@ -3,6 +3,7 @@
 enum class Action
 {
     None,           //不处理
+    Search,
     Save,           //Ctrl-S
     Quit,           //Ctrl-Q
     Resize,         //窗口尺寸改变

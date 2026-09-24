@@ -40,12 +40,12 @@ static void draw_from(const Document &doc, const View &view, Layout lay, int row
 }
 
 //刷新状态栏参数
-void StatusLine::status_refresh(const Document &doc)
+void StatusLine::status_refresh(const Document &doc, bool search_mode)
 {
     row = doc.row + 1;
     col = doc.col + 1;
     modified = doc.edit.dirty_row >= 0 || modified;
-    if(message == "Saved")
+    if(message == "Saved" || search_mode)
         msg_color = 1;
     else if(message == "Unsaved changes, press Ctrl-Q again to quit")
         msg_color = 2;
@@ -152,9 +152,7 @@ void draw_status(const StatusLine &state, Layout lay)
     }
 
     wattrset(stdscr, A_NORMAL);
-
-    if(x < lay.cols)                        //剩下的用空格填到行尾
-        waddnstr(stdscr, std::string(lay.cols - x, ' ').c_str(), lay.cols - x);
+    wclrtoeol(stdscr);
 }
 
 //终端尺寸改变时的处理
