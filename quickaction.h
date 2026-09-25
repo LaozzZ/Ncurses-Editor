@@ -10,17 +10,8 @@ struct Search
     std::string query;
     std::string position;
 
-    void search_refresh()
-    {
-        search_results.clear();
-        query.clear();
-        position.clear();
-    }
 
-    std::string search_msg()
-    {
-        return "Search: " + query + position;
-    }
+    std::string search_msg();
 
     void search_init(const Document &doc);
 
@@ -29,4 +20,27 @@ struct Search
     void search_insert_char(char ch);
 
     void search_erase();
+
+    void search_clear();
+};
+
+struct Replace
+{
+    std::vector<bool> replace_map;
+    int replace_stage = 0;
+    std::string target;
+
+    Search se;
+
+    std::string replace_msg();
+
+    void replace_insert_char(char ch);
+
+    void replace_erase();
+
+    void replace_this(Document &doc);
+
+    void replace_all(Document &doc);
+
+    void replace_clear();
 };

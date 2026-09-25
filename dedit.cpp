@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
     Document doc;
     StatusLine state;
     Search se;
+    Replace re;
 
     if(argc != 1)
     {
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
     bool quit_warning = false;          //Save相关
 
     bool search_mode = false;           //Search相关
+    bool replace_mode = false;
 
     while(true)
     {
@@ -75,14 +77,59 @@ int main(int argc, char *argv[])
             {
                 search_mode = false;
                 state.message.clear();
-                se.search_refresh();
+                se.search_clear();
             }            
+        }
+        else if(replace_mode)       //替换模式
+        {
+            if(re.replace_stage != 2)
+            {
+                if(action == Action::Char)
+                    re.replace_insert_char(ch);
+                else if(action == Action::Backspace)
+                    re.replace_erase();
+                else if(action == Action::Enter)
+                {
+                    re.se.search_init(doc);
+                    re.replace_map = std::vector<bool>(re.se.search_results.size(), true);
+                    if(++re.replace_stage == 2)
+                        re.se.search_turn_page(doc);
+                }
+            }
+            else
+            {
+                if(action == Action::Char && (ch == 'y' || ch == 'Y'))
+                    re.replace_this(doc);
+                else if(action == Action::Char && (ch == 'a' || ch == 'A'))
+                {
+                    re.replace_all(doc);
+                    view_moved = true;
+                }
+                else if(action == Action::Char && (ch == 'n' || ch == 'N'))
+                    re.se.search_turn_page(doc);
+                else if(action == Action::Enter)
+                    re.se.search_turn_page(doc);
+            }
+
+            state.message = re.replace_msg();
+
+            if(action == Action::Esc)
+            {
+                replace_mode = false;
+                state.message.clear();
+                re.replace_clear();
+            }
         }
         else switch(action)
         {
             case Action::Search:
                 state.message = "Search: ";
                 search_mode = true;
+                break;
+
+            case Action::Replace:
+                state.message = "Search: ";
+                replace_mode = true;
                 break;
 
             case Action::Save:

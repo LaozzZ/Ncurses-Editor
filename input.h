@@ -4,6 +4,7 @@ enum class Action
 {
     None,           //不处理
     Search,
+    Replace,
     Save,           //Ctrl-S
     Quit,           //Ctrl-Q
     Esc,

@@ -43,5 +43,4 @@ struct Document
     void erase_before();        //退格
     void erase_front();         //Delete
 
-    void search(const std::string &target, std::string &position, std::vector<std::vector<int>> &search_results);
 };
