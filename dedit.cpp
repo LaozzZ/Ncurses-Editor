@@ -5,11 +5,13 @@
 #include "input.h"
 #include "screen.h"
 #include "view.h"
+#include "quickaction.h"
 
 int main(int argc, char *argv[])
 {
     Document doc;
     StatusLine state;
+    Search se;
 
     if(argc != 1)
     {
@@ -34,8 +36,6 @@ int main(int argc, char *argv[])
     bool quit_warning = false;          //Save相关
 
     bool search_mode = false;           //Search相关
-    std::vector<std::vector<int>> search_results;
-    std::string query;
 
     while(true)
     {
@@ -52,19 +52,15 @@ int main(int argc, char *argv[])
 
         if(search_mode)             //搜索模式
         {          
-            std::string position;
             if(action == Action::Char)
-            {
-                query += ch;
-                search_results.clear();
-            }
-            else if(action == Action::Backspace && !query.empty())
-            {
-                query.pop_back();
-                search_results.clear();
-            }
+                se.search_insert_char(ch);
+            else if(action == Action::Backspace)
+                se.search_erase();
             else if(action == Action::Enter)
-                doc.search(query, position, search_results);
+            {
+                se.search_init(doc);
+                se.search_turn_page(doc);
+            }
             else if(action == Action::Resize)
             {
                 terminal_resize();
@@ -73,13 +69,13 @@ int main(int argc, char *argv[])
                 view_moved = true;
             }
             
-            state.message = "Search: " + query + position;
-            
+            state.message = se.search_msg();
                         
             if(action == Action::Esc)
             {
                 search_mode = false;
                 state.message.clear();
+                se.search_refresh();
             }            
         }
         else switch(action)
@@ -87,7 +83,6 @@ int main(int argc, char *argv[])
             case Action::Search:
                 state.message = "Search: ";
                 search_mode = true;
-                query.clear();
                 break;
 
             case Action::Save:
