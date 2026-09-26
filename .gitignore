@@ -1,3 +1,6 @@
 .vscode
 Ncurses
+tests
+tools
 *.exe
+*.txt
