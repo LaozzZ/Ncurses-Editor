@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
     StatusLine state;
     Search se;
     Replace re;
+    Historys historys;
 
     if(argc != 1)
     {
@@ -99,10 +100,10 @@ int main(int argc, char *argv[])
             else
             {
                 if(action == Action::Char && (ch == 'y' || ch == 'Y'))
-                    re.replace_this(doc);
+                    historys.push(re.replace_this(doc));
                 else if(action == Action::Char && (ch == 'a' || ch == 'A'))
                 {
-                    re.replace_all(doc);
+                    historys.push(re.replace_all(doc));
                     view_moved = true;
                 }
                 else if(action == Action::Char && (ch == 'n' || ch == 'N'))
@@ -130,6 +131,10 @@ int main(int argc, char *argv[])
             case Action::Replace:
                 state.message = "Search: ";
                 replace_mode = true;
+                break;
+
+            case Action::Withdraw:
+                historys.withdraw(doc, view_moved);
                 break;
 
             case Action::Save:
@@ -164,14 +169,23 @@ int main(int argc, char *argv[])
             case Action::Down:      doc.move_down();     break;
             case Action::Left:      doc.move_left();     break;
             case Action::Right:     doc.move_right();    break;
-            case Action::Backspace: doc.erase_before();  break;
-            case Action::Del:       doc.erase_front();   break;
-            case Action::Enter:     doc.split_line();    break;
-            case Action::Char:      doc.insert_char(ch); break;
+            case Action::Backspace: 
+                historys.erase_before(doc);
+                break;
+            case Action::Del:     
+                historys.erase_front(doc);
+                break;
+            case Action::Enter:    
+                historys.split_line(doc);   
+                break;
+            case Action::Char:   
+                historys.insert_char(doc, ch);
+                break;
 
             case Action::None:      break;
             case Action::Esc:       break;
         }
+        historys.ongoing_check(action);
 
         if(view.ensure_visible(doc, lay))
             view_moved = true;
@@ -181,7 +195,7 @@ int main(int argc, char *argv[])
         else
             draw_text_edited(doc, view, lay);
         
-        state.status_refresh(doc, search_mode);
+        state.status_refresh(doc, search_mode, replace_mode);
 
 
         draw_status(state, lay);

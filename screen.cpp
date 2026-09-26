@@ -40,12 +40,12 @@ static void draw_from(const Document &doc, const View &view, Layout lay, int row
 }
 
 //刷新状态栏参数
-void StatusLine::status_refresh(const Document &doc, bool search_mode)
+void StatusLine::status_refresh(const Document &doc, bool search, bool replace)
 {
     row = doc.row + 1;
     col = doc.col + 1;
     modified = doc.edit.dirty_row >= 0 || modified;
-    if(message == "Saved" || search_mode)
+    if(message == "Saved" || search || replace)
         msg_color = 1;
     else if(message == "Unsaved changes, press Ctrl-Q again to quit")
         msg_color = 2;

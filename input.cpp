@@ -13,6 +13,7 @@ Action read_action(char &ch)
     {
         case 0x06:          return Action::Search;
         case 0x12:          return Action::Replace;
+        case 0x1A:          return Action::Withdraw;
         case 0x13:          return Action::Save;
         case 0x11:          return Action::Quit;        //Ctrl-Q
         case 27:            return Action::Esc;

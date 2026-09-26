@@ -12,6 +12,11 @@ void Document::move_to(int row, int col)
 {
     this->row = row;
     this->col = col;
+
+    if(row > (int)lines.size() - 1)
+        this->row = (int)lines.size() - 1;
+    if(col > (int)lines[row].size())
+        this->col = (int)lines[row].size();
 }
 
 void Document::move_up()

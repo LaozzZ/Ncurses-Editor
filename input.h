@@ -5,6 +5,7 @@ enum class Action
     None,           //不处理
     Search,
     Replace,
+    Withdraw,
     Save,           //Ctrl-S
     Quit,           //Ctrl-Q
     Esc,
