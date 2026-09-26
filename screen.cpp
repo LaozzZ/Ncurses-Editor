@@ -62,7 +62,13 @@ Layout screen_layout()
 //初始化curses
 void screen_init()
 {
+    setlocale(LC_ALL, "");          //Linux
+
     initscr();
+    raw();
+#ifndef PDCURSES
+    set_escdelay(25);               //Linux
+#endif
     keypad(stdscr, TRUE);
     noecho();
 
@@ -159,7 +165,11 @@ void draw_status(const StatusLine &state, Layout lay)
 void terminal_resize()
 {
     if(resize_term(0, 0) == ERR)
+    {
+#ifdef PDCURSES         //Linux兼容
         resize_term(2, COLS);
+#endif
+    }
 
     clear();
 }

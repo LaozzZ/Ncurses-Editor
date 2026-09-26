@@ -112,6 +112,14 @@ int main(int argc, char *argv[])
                     re.se.search_turn_page(doc);
             }
 
+            if(action == Action::Resize)
+            {
+                terminal_resize();
+                lay = screen_layout();
+                view.clamp(doc, lay);
+                view_moved = true;
+            }
+
             state.message = re.replace_msg();
 
             if(action == Action::Esc)
