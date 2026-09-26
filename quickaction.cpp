@@ -104,7 +104,7 @@ History Replace::replace_this(Document &doc)
         return {};
     }
 
-    History res = {Type::Replace, {{doc.row, doc.row}}, {doc.line(doc.row)}};
+    History res = {Type::Replace, {{doc.row, doc.col}}, {doc.line(doc.row)}};
     doc.lines[doc.row].replace(doc.col, (int)se.query.size(), target);
     doc.edit = {doc.row, doc.col, true};
 

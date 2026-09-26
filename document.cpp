@@ -15,7 +15,7 @@ void Document::move_to(int row, int col)
 
     if(row > (int)lines.size() - 1)
         this->row = (int)lines.size() - 1;
-    if(col > (int)lines[row].size())
+    if(col > (int)lines[this->row].size())
         this->col = (int)lines[row].size();
 }
 
